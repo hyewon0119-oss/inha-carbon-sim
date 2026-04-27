@@ -12,9 +12,14 @@ from pydantic import BaseModel, Field
 DB_PATH = Path(__file__).parent / "leaderboard.db"
 
 COEFFS = {
-    "solar": 460,
+    "solar_self": 460,
+    "solar_bipv": 380,
+    "solar_lease": 0,      # 부지대여 → 대학 감축 실적 귀속 불가
     "led": 30,
+    "geothermal": 1500,
+    "bems": 15000,          # 건물 1동 기준
     "ev": 1200,
+    "rainwater": 50,
     "greenroof": 5,
     "tree": 22,
 }

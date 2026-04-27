@@ -1,9 +1,12 @@
-import { ITEM_TYPES } from './items.js';
+import { ITEM_TYPES, GROUPS } from './items.js';
 
 export default function Palette({ selected, onSelect, nickname, onNickname }) {
   return (
     <aside className="sidebar">
       <h2>🌱 Inha Carbon Sim</h2>
+      <p style={{ fontSize: 11, color: '#8b949e', margin: '0 0 12px' }}>
+        인하대학교 캠퍼스 탄소중립 시뮬레이터
+      </p>
 
       <h3>닉네임</h3>
       <input
@@ -14,18 +17,31 @@ export default function Palette({ selected, onSelect, nickname, onNickname }) {
         onChange={(e) => onNickname(e.target.value)}
       />
 
-      <h3>배치 요소 선택</h3>
-      {ITEM_TYPES.map((it) => (
-        <div
-          key={it.id}
-          className={'palette-item' + (selected === it.id ? ' active' : '')}
-          onClick={() => onSelect(selected === it.id ? null : it.id)}
-        >
-          <div className="icon">{it.icon}</div>
-          <div>
-            <div className="label">{it.label}</div>
-            <div className="coeff">{it.coeff} kgCO₂/년 · {it.unit}</div>
-          </div>
+      {GROUPS.map((group) => (
+        <div key={group}>
+          <h3>{group}</h3>
+          {ITEM_TYPES.filter((it) => it.group === group).map((it) => (
+            <div
+              key={it.id}
+              className={
+                'palette-item' +
+                (selected === it.id ? ' active' : '') +
+                (it.coeff === 0 ? ' disabled' : '')
+              }
+              onClick={() => onSelect(selected === it.id ? null : it.id)}
+            >
+              <div className="icon">{it.icon}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="label">{it.label}</div>
+                <div className="coeff">
+                  {it.coeff === 0
+                    ? '⚠ 절감효과 0 (대학 귀속 불가)'
+                    : `${it.coeff.toLocaleString()} kgCO₂/년 · ${it.unit}`}
+                </div>
+                <div className="item-desc">{it.desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
       ))}
 

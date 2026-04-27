@@ -20,12 +20,13 @@ uvicorn main:app --reload --port 8000
 ### 프론트엔드
 ```bash
 cd frontend
-cp .env.example .env   # 그리고 .env 안에 본인 Mapbox 토큰 입력
 npm install
 npm run dev
 ```
 
-> Mapbox 토큰은 https://account.mapbox.com/access-tokens/ 에서 무료 발급
+> **Mapbox 토큰 불필요** — 기본적으로 [OpenFreeMap](https://openfreemap.org/) 무료 벡터 타일을 사용합니다.
+>
+> Mapbox 스타일을 쓰고 싶다면 `.env` 파일을 만들고 `VITE_MAPBOX_TOKEN=pk.xxx` 추가.
 
 http://localhost:5173 접속.
 

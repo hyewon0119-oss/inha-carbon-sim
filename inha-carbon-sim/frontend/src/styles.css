@@ -170,7 +170,7 @@ input[type=text]:focus { outline: none; border-color: #7ee787; }
 .marker-3d:hover .marker-label { opacity: 1; }
 
 /* Mapbox 팝업 스타일 */
-.mapboxgl-popup-content {
+.maplibregl-popup-content {
   background: rgba(13,17,23,.95) !important;
   color: #e6edf3 !important;
   border: 1px solid #30363d !important;
@@ -179,4 +179,4 @@ input[type=text]:focus { outline: none; border-color: #7ee787; }
   font-family: -apple-system, "Segoe UI", system-ui, sans-serif !important;
   font-size: 13px !important;
 }
-.mapboxgl-popup-tip { border-top-color: rgba(13,17,23,.95) !important; }
+.maplibregl-popup-tip { border-top-color: rgba(13,17,23,.95) !important; }

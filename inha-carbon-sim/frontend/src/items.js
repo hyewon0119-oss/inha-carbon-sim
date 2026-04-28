@@ -16,18 +16,18 @@ export const ITEM_TYPES = [
   // ── 에너지 생산 ──
   { id: 'solar_self', label: '자가소비 태양광', icon: '☀️', coeff: 460, unit: 'kW', color: '#f2cc60', group: '에너지 생산',
     desc: '옥상 설치, 자가소비 → Scope2 직접 감소',
-    model3d: { shape: 'panel', radius: 0.00006, height: 1.2, onRoof: true,
-               color: '#1e2a45', topColor: '#3b5fa8' } },
+    model3d: { shape: 'panel_array', radius: 0.00010, height: 0.8, onRoof: true,
+               color: '#0d1a3a', topColor: '#2e4a8a', arrayRows: 2, arrayCols: 4 } },
 
   { id: 'solar_bipv', label: 'BIPV (건물일체형)', icon: '🏗️', coeff: 380, unit: 'kW', color: '#e0a830', group: '에너지 생산',
     desc: '벽면·유리 통합, 효율 85%',
-    model3d: { shape: 'panel', radius: 0.00005, height: 8, onRoof: true,
-               color: '#b8893a', topColor: '#f2cc60' } },
+    model3d: { shape: 'panel_array', radius: 0.00009, height: 4, onRoof: true,
+               color: '#5a4a1f', topColor: '#e0a830', arrayRows: 1, arrayCols: 5 } },
 
   { id: 'solar_lease', label: '부지대여 태양광', icon: '⚠️', coeff: 0, unit: 'kW', color: '#6e7681', group: '에너지 생산',
     desc: '감축 실적 대학 귀속 불가 (현재 인하대 방식)',
-    model3d: { shape: 'panel', radius: 0.00005, height: 0.8, onRoof: false,
-               color: '#3a3a3a', topColor: '#5a5a5a' } },
+    model3d: { shape: 'panel_array', radius: 0.00010, height: 0.8, onRoof: false,
+               color: '#1a1a1a', topColor: '#3a3a3a', arrayRows: 2, arrayCols: 4 } },
 
   // ── 에너지 절감 ──
   { id: 'led', label: 'LED 조명 교체', icon: '💡', coeff: 30, unit: '개', color: '#58a6ff', group: '에너지 절감',
@@ -74,6 +74,7 @@ export const GROUPS = [...new Set(ITEM_TYPES.map((t) => t.group))];
 
 // ─── 3D 폴리곤 생성 헬퍼 ───
 // 점 좌표 + 모델 → 실제 폴리곤 좌표 배열
+// panel_array 는 여러 개의 폴리곤 배열 반환 (배열 형식 = 다중 패널)
 export function buildItemPolygon(item, baseHeight = 0) {
   const m = ITEM_MAP[item.type]?.model3d;
   if (!m) return null;
@@ -81,10 +82,40 @@ export function buildItemPolygon(item, baseHeight = 0) {
   const lng = item.lng;
   const lat = item.lat;
   const r = m.radius;
-  // 위도 보정 — 경도 거리는 cos(lat)로 줄어듦
   const latRatio = 1 / Math.cos((lat * Math.PI) / 180);
   const rx = r * latRatio;
   const ry = r;
+
+  if (m.shape === 'panel_array') {
+    // 여러 개의 작은 패널을 격자로 배치 (진짜 솔라 어레이처럼)
+    const rows = m.arrayRows || 2;
+    const cols = m.arrayCols || 4;
+    const panelWLng = (rx * 1.8) / cols;  // 한 패널 가로
+    const panelHLat = ry / rows;            // 한 패널 세로
+    const gap = 0.1;                        // 패널 사이 간격 비율
+    const totalW = rx * 1.8;
+    const totalH = ry;
+    const startLng = lng - totalW / 2;
+    const startLat = lat - totalH / 2;
+    const rings = [];
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const panelLng = startLng + col * panelWLng + (panelWLng * gap);
+        const panelLat = startLat + row * panelHLat + (panelHLat * gap);
+        const w = panelWLng * (1 - gap * 2);
+        const h = panelHLat * (1 - gap * 2);
+        const ring = [
+          [panelLng, panelLat],
+          [panelLng + w, panelLat],
+          [panelLng + w, panelLat + h],
+          [panelLng, panelLat + h],
+          [panelLng, panelLat],
+        ];
+        rings.push(ring);
+      }
+    }
+    return rings;  // 배열 반환 — Map.jsx 에서 다중 feature 처리
+  }
 
   let ring = [];
   if (m.shape === 'square') {
@@ -93,7 +124,6 @@ export function buildItemPolygon(item, baseHeight = 0) {
       [lng + rx, lat + ry], [lng - rx, lat + ry],
     ];
   } else if (m.shape === 'panel') {
-    // 가로로 긴 패널 (태양광 패널 모양)
     const rxLong = rx * 1.8;
     ring = [
       [lng - rxLong, lat - ry], [lng + rxLong, lat - ry],

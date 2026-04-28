@@ -1,9 +1,10 @@
 /**
  * 인하대학교 캠퍼스 구역 정의 & 설치 제약조건
  *
- * 건물 폴리곤은 OpenStreetMap 실측 데이터 기반.
+ * 건물 폴리곤은 OpenStreetMap Overpass API 실측 데이터 (자동 임포트).
  * 인경호·도로·주차장·운동장은 실제 캠퍼스 레이아웃에 맞춰 배치.
  */
+import { INHA_BUILDINGS } from './inha_buildings.js';
 
 // ─── 구역 유형 ───
 // old_building   : 1970~80년대 노후 건물 (구조하중 부족)
@@ -19,8 +20,12 @@
 
 export const CAMPUS_ZONES = [
   // ===========================================================
-  // 건물 (OSM 실측 좌표)
+  // 건물 (OSM Overpass API 자동 임포트 — inha_buildings.js 참조)
   // ===========================================================
+  ...INHA_BUILDINGS,
+
+  // === 아래는 기존 수동 정의 건물 (OSM에 없거나 보강용) ===
+  /* DISABLED — OSM 데이터로 대체
   {
     id: 'bldg_main', name: '본관', type: 'old_building', year: 1954, height: 16, floors: 4,
     note: '대학 초기 건물, 자체 보존 방침',
@@ -52,15 +57,19 @@ export const CAMPUS_ZONES = [
     ],
   },
   {
-    id: 'bldg_5', name: '5호관', type: 'old_building', year: 1980, height: 26, floors: 6,
-    note: '문과대학·자연과학대 ㅁ자형 대형 건물',
+    id: 'bldg_5', name: '5호관', type: 'old_building', year: 1980, height: 28, floors: 7,
+    note: '문과대학·자연과학대 대형 건물',
+    // 인하대 5호관 — 6호관 남측에 인접한 ㄷ자형 대형 강의동
+    // OSM 기준 중심 126.65720, 37.44850, 가로 ~95m × 세로 ~50m
     polygon: [
-      [126.65686,37.44871],[126.65683,37.44866],[126.65679,37.44867],[126.65675,37.44860],
-      [126.65678,37.44859],[126.65676,37.44856],[126.65709,37.44843],[126.65709,37.44839],
-      [126.65711,37.44836],[126.65714,37.44835],[126.65717,37.44833],[126.65721,37.44833],
-      [126.65723,37.44834],[126.65724,37.44835],[126.65755,37.44822],[126.65756,37.44825],
-      [126.65761,37.44823],[126.65765,37.44831],[126.65761,37.44832],[126.65764,37.44838],
-      [126.65686,37.44871],
+      [126.65672,37.44827],
+      [126.65782,37.44827],
+      [126.65782,37.44872],
+      [126.65745,37.44872],
+      [126.65745,37.44855],
+      [126.65709,37.44855],
+      [126.65709,37.44872],
+      [126.65672,37.44872],
     ],
   },
   {
@@ -210,6 +219,7 @@ export const CAMPUS_ZONES = [
       [126.65942,37.44844],[126.65959,37.44867],[126.65949,37.44872],
     ],
   },
+  */
 
   // ===========================================================
   // 인경호 (실제 위치 추정 — 본관 동측, 학생회관 남측)
@@ -496,7 +506,7 @@ const RULES = {
 
 
 // ─── 점-다각형 포함 판정 ───
-function pointInPolygon(lng, lat, ring) {
+function pointInRing(lng, lat, ring) {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const [xi, yi] = ring[i];
@@ -508,8 +518,15 @@ function pointInPolygon(lng, lat, ring) {
   return inside;
 }
 
+// 외곽 안에 있고 hole(안뜰) 안에는 없어야 함
+function pointInZone(lng, lat, zone) {
+  if (!pointInRing(lng, lat, zone.polygon)) return false;
+  if (zone.hole && pointInRing(lng, lat, zone.hole)) return false;
+  return true;
+}
+
 export function checkPlacement(itemType, lng, lat) {
-  const zone = CAMPUS_ZONES.find((z) => pointInPolygon(lng, lat, z.polygon));
+  const zone = CAMPUS_ZONES.find((z) => pointInZone(lng, lat, z));
   const rules = RULES[itemType];
   if (!rules) return { allowed: true, reason: '✅ 설치 가능', zone };
 
